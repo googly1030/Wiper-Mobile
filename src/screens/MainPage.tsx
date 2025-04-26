@@ -6,14 +6,19 @@ import {
   carCleanedDays,
   updates,
 } from "./data/mockData";
-import { Car ,Calendar} from "lucide-react";
+import { Car, Calendar } from "lucide-react";
 import { UpdateType } from "./types";
+import BottomNavigation from "../components/BottomNavigation";
+import PageHeader from "../components/PageHeader";
 
 function MainPage() {
   const [groupedUpdates, setGroupedUpdates] = useState<
     Record<string, UpdateType[]>
   >({});
   const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
+  const [activeTab, setActiveTab] = useState<"home" | "plans" | "reports">(
+    "home"
+  );
 
   // Group updates by date
   useEffect(() => {
@@ -50,45 +55,39 @@ function MainPage() {
       style={{ maxWidth: screenWidth > 768 ? "480px" : "100%" }}
     >
       <div className="relative">
-        {/* Header */}
-        <header className="flex justify-between items-center p-4 w-full sticky top-0 bg-white z-10">
-          <h1 className="text-2xl font-bold text-[#3A4B06]">Wiper</h1>
-          <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center">
-            <span>A</span>
-          </div>
-        </header>
+        <PageHeader userName="A" />
 
         <div className="px-4 pb-20">
           {/* Plan Notification */}
-          <div 
+          <div
             className="flex items-center mb-4"
             style={{
-                width: '380px',
-                height: '52px',
-                borderRadius: '6px',
-                background: '#CAE661',
-                padding: '0.375rem 0.75rem', // Space/150 equivalent
-                maxWidth: '100%' // For responsiveness
+              width: "380px",
+              height: "52px",
+              borderRadius: "6px",
+              background: "#CAE661",
+              padding: "0.375rem 0.75rem", // Space/150 equivalent
+              maxWidth: "100%", // For responsiveness
             }}
+          >
+            <span className="mr-2 text-lg">
+              <Calendar className="w-5 h-5" />
+            </span>
+            <p
+              className="text-sm"
+              style={{
+                fontFamily: "var(--label-large-font)",
+                fontWeight: 500,
+                fontSize: "var(--label-large-size)",
+                lineHeight: "var(--label-large-line-height)",
+                letterSpacing: "var(--label-large-tracking)",
+                textAlign: "center",
+                verticalAlign: "middle",
+              }}
             >
-                    <span className="mr-2 text-lg">
-        <Calendar className="w-5 h-5" />
-        </span>
-        <p 
-        className="text-sm"
-        style={{
-            fontFamily: 'var(--label-large-font)',
-            fontWeight: 500,
-            fontSize: 'var(--label-large-size)',
-            lineHeight: 'var(--label-large-line-height)',
-            letterSpacing: 'var(--label-large-tracking)',
-            textAlign: 'center',
-            verticalAlign: 'middle'
-        }}
-        >
-        Your current plan will end in {planExpiryDate}
-        </p>
-            </div>
+              Your current plan will end in {planExpiryDate}
+            </p>
+          </div>
 
           {/* Location Info */}
           <div
@@ -180,27 +179,26 @@ function MainPage() {
           </div>
 
           {/* Wiper Updates Section */}
-          <div>
+          <div className="wiper-updates-section ">
             <div className="mb-3">
               <h2 className="text-xl font-semibold text-[#3A4B06]">
                 Wiper Updates
               </h2>
             </div>
             <div
-              className="flex items-center mb-5"
+              className="flex items-center mb-5 mx-auto w-full"
               style={{
-                width: "380px",
-                height: "52px",
-                borderRadius: "6px",
+                maxWidth: "380px",
+                minHeight: "60px", // Increased for better touch targets
+                borderRadius: "12px", // Increased for modern look
                 background: "#F9FFE5",
-                maxWidth: "100%",
-                padding: "0.375rem 0.75rem",
+                padding: "1rem",  // Increased padding for better spacing
               }}
             >
-              <span className="mr-2 text-lg">
-                <Car className="w-5 h-5" />
+              <span className="mr-3 flex-shrink-0"> {/* Increased margin and prevented shrinking */}
+                <Car className="w-6 h-6 text-[#2A3A0F]" /> {/* Increased icon size */}
               </span>
-              <p className="text-sm">
+              <p className="text-base text-[#2A3A0F] flex-1"> {/* Increased text size and added flex-1 */}
                 Your car has been cleaned for {carCleanedDays}
               </p>
             </div>
@@ -250,77 +248,34 @@ function MainPage() {
             ))}
           </div>
           <div className="w-full px-4">
-            <button
-              className="w-[380px] h-[64px] bg-black rounded-[100px] flex items-center justify-center gap-2 py-3 mx-auto"
-              style={{
-                background: "#000000",
-                maxWidth: "100%", // This ensures button is responsive on smaller screens
-              }}
-            >
-              <span
-                className="font-medium text-xl text-center"
-                style={{
-                  fontFamily: "var(--label-large-font)",
-                  color: "#D3FF33",
-                  letterSpacing: "var(--label-large-tracking)",
-                  lineHeight: "var(--label-large-line-height)",
-                }}
-              >
-                View Reports
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom Navigation */}
-        <div
-  className="fixed bottom-0 left-0 right-0 bg-[#F8FFDD] h-16 flex items-center justify-around z-10 shadow-md"
-  style={{
-    maxWidth: screenWidth > 768 ? "480px" : "100%",
-    margin: "0 auto",
-  }}
->
-  <button className="flex flex-col items-center flex-1 py-2">
-    <img 
-      src="./homeicon.png" 
-      alt="Home" 
+  <button
+    className="w-full h-[48px] md:w-[380px] md:h-[64px] bg-black rounded-[100px] flex items-center justify-center gap-2 py-3 mx-auto"
+    style={{
+      background: "#000000",
+      maxWidth: "100%", // This ensures button is responsive on smaller screens
+    }}
+  >
+    <span
+      className="font-medium text-sm md:text-base text-center"
       style={{
-        width: '22px',
-        height: '18px',
-        marginTop: '4px',
-        marginLeft: '1px'
+        fontFamily: "var(--label-large-font)",
+        color: "#D3FF33",
+        letterSpacing: "var(--label-large-tracking)",
+        lineHeight: "var(--label-large-line-height)",
       }}
-    />
-    <span className="text-xs text-gray-700">Home</span>
-  </button>
-  <button className="flex flex-col items-center flex-1 py-2">
-    <img 
-      src="./planicon.png" 
-      alt="Plans" 
-      style={{
-        width: '22px',
-        height: '18px',
-        marginTop: '4px',
-        marginLeft: '1px'
-      }}
-    />
-    <span className="text-xs text-gray-700">Plans</span>
-  </button>
-  <button className="flex flex-col items-center flex-1 py-2">
-    <img 
-      src="./reporticon.png" 
-      alt="Reports" 
-      style={{
-        width: '16px',
-        height: '20px',
-        top: '2px',
-        left: '4px'
-        
-      }}
-    />
-    <span className="text-xs text-gray-700">Reports</span>
+    >
+      View Reports
+    </span>
   </button>
 </div>
+        </div>
+
+        {/* Bottom Navigation Component */}
+        <BottomNavigation
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          screenWidth={screenWidth}
+        />
 
         {/* Chat button */}
         <div
