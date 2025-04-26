@@ -1,0 +1,6 @@
+:root {
+    --label-large-font: system-ui, -apple-system, sans-serif;
+    --label-large-size: 14px;
+    --label-large-line-height: 20px;
+    --label-large-tracking: 0.1px;
+  }
