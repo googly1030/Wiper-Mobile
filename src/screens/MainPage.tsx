@@ -55,8 +55,9 @@ function MainPage() {
   // Check if user has active plan
   useEffect(() => {
     const checkUserPlan = async () => {
+      // Keep loading state true if no user yet
       if (!currentUser?.id) {
-        setIsLoading(false);
+        // Don't set isLoading to false here
         return;
       }
       
@@ -79,7 +80,9 @@ function MainPage() {
       }
     };
     
-    checkUserPlan();
+    if (currentUser?.id) {
+      checkUserPlan();
+    }
   }, [currentUser]);
 
   // Group updates by date
@@ -335,7 +338,8 @@ function MainPage() {
             </div>
           </div>
 
-          {isLoading ? (
+          {/* Main content section */}
+          {isLoading || !currentUser ? (
             // Loading state
             <div className="flex flex-col items-center justify-center py-10">
               <div className="w-12 h-12 border-2 border-[#CAE661] border-t-[#3A4B06] rounded-full animate-spin"></div>
@@ -344,11 +348,7 @@ function MainPage() {
           ) : hasActivePlan ? (
             // User has an active plan - show updates
             <div className="wiper-updates-section">
-              <div className="mb-3">
-                <h2 className="text-xl font-semibold text-[#3A4B06]">
-                  Wiper Updates
-                </h2>
-              </div>
+              {/* Existing code for updates section */}
               
               <div
                 className="flex items-center mb-5 mx-auto w-full"

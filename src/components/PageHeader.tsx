@@ -63,9 +63,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({ userName = 'A' }) => {
             >
               Profile
             </div>
-            <div className="py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
-              Settings
-            </div>
             <div className="border-t border-gray-200"></div>
             <div 
               className="py-2 px-4 text-sm text-red-500 hover:bg-gray-100 cursor-pointer"

@@ -49,8 +49,9 @@ function ReportPage() {
   // Check if user has active plan
   useEffect(() => {
     const checkUserPlan = async () => {
+      // Don't set isLoading to false if no user yet
       if (!currentUser?.id) {
-        setIsLoading(false);
+        // Remove this line: setIsLoading(false);
         return;
       }
       
@@ -61,9 +62,9 @@ function ReportPage() {
           .eq('user_id', currentUser.id)
           .eq('is_active', true)
           .limit(1);
-          
+            
         if (error) throw error;
-        
+          
         setHasActivePlan(!!planData && planData.length > 0);
       } catch (err) {
         console.error('Error checking plan status:', err);
@@ -73,7 +74,10 @@ function ReportPage() {
       }
     };
     
-    checkUserPlan();
+    // Only call checkUserPlan if we have a currentUser
+    if (currentUser?.id) {
+      checkUserPlan();
+    }
   }, [currentUser]);
 
   // Group updates by date - only if user has an active plan
@@ -116,7 +120,8 @@ function ReportPage() {
         {/* Header */}
         <PageHeader userName={currentUser?.full_name?.[0] || "A"} />
 
-        {isLoading ? (
+        {/* Update the conditional rendering to check both loading and user existence */}
+        {isLoading || !currentUser ? (
           // Loading state
           <div className="flex flex-col items-center justify-center py-10">
             <div className="w-12 h-12 border-2 border-[#CAE661] border-t-[#3A4B06] rounded-full animate-spin"></div>
@@ -130,7 +135,8 @@ function ReportPage() {
                 <CalendarSection />
               </div>
             </div>
-
+            
+            {/* Rest of the active plan UI */}
             <div className="px-4 pb-20">
               {/* Wiper Updates Section */}
               <div className="wiper-updates-section">
