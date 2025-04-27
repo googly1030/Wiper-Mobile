@@ -1,7 +1,7 @@
 import { ArrowLeft, ChevronDown } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { supabase } from "../lib/supabase" // Import supabase client
+import { supabase } from "../lib/supabase"
 
 // Country data with codes
 const countries = [
@@ -85,7 +85,25 @@ export default function WiperSignup() {
         setError("Email and password are required")
         return
       }
-      nextStep()
+      
+      // Check if email already exists in Supabase before proceeding
+      try {
+        const { data } = await supabase
+          .from('user_profile')
+          .select('email')
+          .eq('email', formData.email)
+          .maybeSingle() 
+        
+        if (data) {
+          setError("Email already exists. Please use a different email or login.")
+          return
+        }
+        // If email doesn't exist, proceed to next step
+        nextStep()
+      } catch (err) {
+        // If error is not found error, it means email doesn't exist, so proceed
+        nextStep()
+      }
     } 
     else if (step === 2) {
       // Validate phone number
@@ -117,11 +135,28 @@ export default function WiperSignup() {
       try {
         setLoading(true)
         
-        // Create a user data object
-        const userData = {
-          id: crypto.randomUUID(), // Generate a random ID
+        // 1. Register with Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email: formData.email,
-          password: formData.password, // Note: storing passwords in localStorage is not secure
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/login`,
+            data: {
+              full_name: formData.fullName
+            }
+          }
+        })
+        
+        if (authError) throw authError
+        
+        if (!authData.user) {
+          throw new Error("User registration failed")
+        }
+
+        // 2. Save user profile data to user_profile table
+        const profileData = {
+          id: authData.user.id,
+          email: formData.email,
           full_name: formData.fullName,
           phone: `${formData.countryCode}${formData.phoneNumber}`,
           country: formData.country,
@@ -131,13 +166,21 @@ export default function WiperSignup() {
           created_at: new Date().toISOString()
         }
         
-        // Store user in localStorage
-        localStorage.setItem('currentUser', JSON.stringify(userData))
+        // Attempt to insert into the database
+        const { error: profileError } = await supabase
+          .from('user_profile')
+          .insert(profileData)
         
-        // Store in users array if needed
-        const existingUsers = JSON.parse(localStorage.getItem('users') || '[]')
-        existingUsers.push(userData)
-        localStorage.setItem('users', JSON.stringify(existingUsers))
+        if (profileError) {
+          console.error("Profile creation error:", profileError)
+          throw new Error("Failed to create user profile: " + profileError.message)
+        }
+        
+        // Also store in localStorage for compatibility with existing code
+        localStorage.setItem('currentUser', JSON.stringify(profileData))
+        
+        // Show a message that account is created
+        setError("") // Clear any existing errors
         
         // Add a delay to show the loader before navigation
         setTimeout(() => {
@@ -152,33 +195,7 @@ export default function WiperSignup() {
     }
   }
 
-  // Social login with Google
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true)
-      
-      // Mock Google login
-      const mockGoogleUser = {
-        id: crypto.randomUUID(),
-        email: 'google-user@example.com',
-        full_name: 'Google User',
-        provider: 'google',
-        created_at: new Date().toISOString()
-      }
-      
-      // Store the user in localStorage
-      localStorage.setItem('currentUser', JSON.stringify(mockGoogleUser))
-      
-      // Navigate to home
-      navigate('/home')
-    } catch (err: any) {
-      console.error('Error during Google login:', err)
-      setError(err.message || "Google login failed")
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Keep the existing return JSX as-is, no changes needed for the UI
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col px-5 py-4 max-w-md mx-auto">
       {/* Back button */}
@@ -235,16 +252,16 @@ export default function WiperSignup() {
             />
           </div>
           <div className="flex justify-center mt-2">
-      <p className="text-sm text-gray-600">
-        Already have an account?{" "}
-        <span 
-          className="text-[#3A4B06] font-medium cursor-pointer hover:underline"
-          onClick={() => navigate('/login')}
-        >
-          Login
-        </span>
-      </p>
-    </div>
+            <p className="text-sm text-gray-600">
+              Already have an account?{" "}
+              <span 
+                className="text-[#3A4B06] font-medium cursor-pointer hover:underline"
+                onClick={() => navigate('/login')}
+              >
+                Login
+              </span>
+            </p>
+          </div>
         </div>
       )}
 
@@ -413,39 +430,42 @@ export default function WiperSignup() {
             <div className="flex-grow h-px bg-gray-300"></div>
           </div>
 
-          {/* Social login options */}
+          {/* Social login options (disabled for now) */}
           <div className="flex justify-center gap-4 mb-8">
             <button 
-              className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors"
-              disabled={loading}
+              className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors opacity-50"
+              disabled={true}
             >
                 <img src="./google.png" alt="Google" className="w-10 h-10 object-contain" />
             </button>
-            <button className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors">
+            <button 
+              className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors opacity-50"
+              disabled={true}
+            >
                 <img src="./apple.png" alt="Apple" className="w-10 h-10 object-contain" />
             </button>
           </div>
         </>
       )}
 
-      {/* Next button - modify the onClick handler */}
+      {/* Next button */}
       <button 
-  onClick={handleNextStep}
-  disabled={loading}
-  className={`bg-black text-[#c5ff00] font-medium py-4 rounded-full mt-auto flex items-center justify-center ${loading ? 'opacity-90' : ''}`}
->
-  {loading ? (
-    <div className="flex items-center justify-center">
-      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#c5ff00]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      Setting up your account...
-    </div>
-  ) : (
-    step === 4 ? "Welcome Aboard!" : "Next"
-  )}
-</button>
+        onClick={handleNextStep}
+        disabled={loading}
+        className={`bg-black text-[#c5ff00] font-medium py-4 rounded-full mt-auto flex items-center justify-center ${loading ? 'opacity-90' : ''}`}
+      >
+        {loading ? (
+          <div className="flex items-center justify-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#c5ff00]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Setting up your account...
+          </div>
+        ) : (
+          step === 4 ? "Welcome Aboard!" : "Next"
+        )}
+      </button>
     </div>
   )
 }

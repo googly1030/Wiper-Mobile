@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase'; // Add this import
 
 interface PageHeaderProps {
   userName?: string;
@@ -28,12 +29,19 @@ const PageHeader: React.FC<PageHeaderProps> = ({ userName = 'A' }) => {
     setShowDropdown(false);
   };
   
-  const handleLogout = () => {
-    // Clear user session from localStorage
-    localStorage.removeItem('currentUser');
-    
-    // Navigate to root route
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      // Sign out from Supabase auth
+      await supabase.auth.signOut();
+      
+      // Clear user session from localStorage
+      localStorage.removeItem('currentUser');
+      
+      // Navigate to root route
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (

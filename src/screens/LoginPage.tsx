@@ -28,15 +28,57 @@ export default function LoginPage() {
     
     try {
       setLoading(true)
-      const { error } = await supabase.auth.signInWithPassword({
+      
+      // 1. Check if user exists in Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password
       })
       
-      if (error) throw error
+      if (authError) throw authError
       
-      // Navigate to home on success
+      if (!authData.user) {
+        throw new Error("Login failed")
+      }
+      
+      // 2. Try to fetch user profile data from user_profile table
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profile')
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle() // Use maybeSingle instead of single to avoid error
+    
+      // Create a user object with at least the basic info from auth
+      const userData = {
+        id: authData.user.id,
+        email: authData.user.email || formData.email,
+        full_name: authData.user.user_metadata?.full_name || '',
+        // Initialize with empty values for other fields
+        phone: '',
+        country: '',
+        block: '',
+        apartment_name: '',
+        referral_code: '',
+      }
+    
+      // If profile data exists, use it to enhance the user object
+      if (profileData) {
+        Object.assign(userData, {
+          full_name: profileData.full_name,
+          phone: profileData.phone,
+          country: profileData.country,
+          block: profileData.block,
+          apartment_name: profileData.apartment_name,
+          referral_code: profileData.referral_code,
+        })
+      }
+      
+      // Store user data in localStorage for compatibility with existing code
+      localStorage.setItem('currentUser', JSON.stringify(userData))
+      
+      // Always navigate to home page for successful auth
       navigate('/home')
+      
     } catch (err: any) {
       console.error('Error logging in:', err)
       setError(err.message || "Login failed")
@@ -45,22 +87,7 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true)
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google'
-      })
-      if (error) throw error
-      // Auth redirect will handle navigation
-    } catch (err: any) {
-      console.error('Error during Google login:', err)
-      setError(err.message || "Google login failed")
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  // Keep the existing return JSX mostly as-is, just update the form to use handleLogin
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col px-5 py-4 max-w-md mx-auto">
       {/* Back button */}
@@ -136,12 +163,15 @@ export default function LoginPage() {
 
       <div className="flex justify-center gap-4 mb-8">
         <button 
-          disabled={loading}
-          className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors"
+          disabled={true}
+          className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm opacity-50"
         >
           <img src="./google.png" alt="Google" className="w-10 h-10 object-contain" />
         </button>
-        <button className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors">
+        <button 
+          disabled={true}
+          className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm opacity-50"
+        >
           <img src="./apple.png" alt="Apple" className="w-10 h-10 object-contain" />
         </button>
       </div>

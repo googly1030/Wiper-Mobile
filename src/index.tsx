@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from 'react-hot-toast';
 import Home from "./screens/HomeScreen";
 import RegisterPage from "./screens/RegisterPage";
 import MainPage from "./screens/MainPage";
@@ -21,8 +22,8 @@ createRoot(document.getElementById("app") as HTMLElement).render(
         <Route path="/reports" element={<ReportPage />} />
         <Route path="/plans" element={<PlansPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        {/* Add more routes as needed */}
       </Routes>
+      <Toaster position="bottom-center" />
     </BrowserRouter>
   </StrictMode>
 );
