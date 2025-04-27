@@ -146,11 +146,12 @@ function MainPage() {
         return;
       }
       
-      // Check if this user already has vehicle info
+      // Check if this user already has a vehicle with the same registration number
       const { data: existingData, error: checkError } = await supabase
         .from('user_vehicles')
         .select('id')
         .eq('user_id', currentUser.id)
+        .eq('registration_number', registrationInput)
         .limit(1);
       
       if (checkError) throw checkError;
