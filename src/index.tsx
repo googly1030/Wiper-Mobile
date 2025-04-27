@@ -6,7 +6,8 @@ import RegisterPage from "./screens/RegisterPage";
 import MainPage from "./screens/MainPage";
 import ReportPage from './screens/ReportPage';
 import PlansPage from "./screens/PlansPage";
-import ProfilePage from "./screens/ProfilePage";
+import ProfilePage from "./screens/Profilepage";
+import LoginPage from './screens/LoginPage'
 import "./index.css";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
@@ -14,6 +15,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/home" element={<MainPage />} />
         <Route path="/reports" element={<ReportPage />} />

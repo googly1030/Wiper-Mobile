@@ -1,6 +1,7 @@
 import { ArrowLeft, ChevronDown } from "lucide-react"
 import { useState } from "react"
-import { useNavigate } from "react-router-dom" // Add this import
+import { useNavigate } from "react-router-dom"
+import { supabase } from "../lib/supabase" // Import supabase client
 
 // Country data with codes
 const countries = [
@@ -21,13 +22,15 @@ const blocks = ["A", "B", "C", "D", "E", "F", "G", "H"]
 const apartments = ["Lake View", "Garden View", "City View", "Mountain View", "Park Side", "River Side"]
 
 export default function WiperSignup() {
-  const navigate = useNavigate() // Add this hook
+  const navigate = useNavigate()
   const [step, setStep] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     country: "India",
-    countryCode: "+91", // Default to India
+    countryCode: "+91",
     phoneNumber: "",
     fullName: "",
     confirmPassword: "",
@@ -35,6 +38,7 @@ export default function WiperSignup() {
     block: "",
     apartmentName: ""
   })
+  
   const [showCountryDropdown, setShowCountryDropdown] = useState(false)
   const [showBlockDropdown, setShowBlockDropdown] = useState(false)
   const [showApartmentDropdown, setShowApartmentDropdown] = useState(false)
@@ -71,12 +75,107 @@ export default function WiperSignup() {
     setStep(prev => Math.max(1, prev - 1))
   }
 
-  const handleNextStep = () => {
-    if (step === 4) {
-      // Navigate to home page when "Welcome Aboard" is clicked
+  const handleNextStep = async () => {
+    // Clear previous errors
+    setError("")
+    
+    if (step === 1) {
+      // Validate email and password
+      if (!formData.email || !formData.password) {
+        setError("Email and password are required")
+        return
+      }
+      nextStep()
+    } 
+    else if (step === 2) {
+      // Validate phone number
+      if (!formData.phoneNumber) {
+        setError("Phone number is required")
+        return
+      }
+      nextStep()
+    }
+    else if (step === 3) {
+      // Validate name and password confirmation
+      if (!formData.fullName) {
+        setError("Full name is required")
+        return
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError("Passwords do not match")
+        return
+      }
+      nextStep()
+    }
+    else if (step === 4) {
+      // Final step - register the user
+      if (!formData.block || !formData.apartmentName) {
+        setError("Block and apartment name are required")
+        return
+      }
+      
+      try {
+        setLoading(true)
+        
+        // Create a user data object
+        const userData = {
+          id: crypto.randomUUID(), // Generate a random ID
+          email: formData.email,
+          password: formData.password, // Note: storing passwords in localStorage is not secure
+          full_name: formData.fullName,
+          phone: `${formData.countryCode}${formData.phoneNumber}`,
+          country: formData.country,
+          block: formData.block,
+          apartment_name: formData.apartmentName,
+          referral_code: formData.referralCode || null,
+          created_at: new Date().toISOString()
+        }
+        
+        // Store user in localStorage
+        localStorage.setItem('currentUser', JSON.stringify(userData))
+        
+        // Store in users array if needed
+        const existingUsers = JSON.parse(localStorage.getItem('users') || '[]')
+        existingUsers.push(userData)
+        localStorage.setItem('users', JSON.stringify(existingUsers))
+        
+        // Add a delay to show the loader before navigation
+        setTimeout(() => {
+          // Navigate to home on success
+          navigate('/home')
+        }, 2000) // 2 seconds delay to show the loader
+      } catch (err: any) {
+        console.error('Error during registration:', err)
+        setError(err.message || "Registration failed")
+        setLoading(false)
+      }
+    }
+  }
+
+  // Social login with Google
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true)
+      
+      // Mock Google login
+      const mockGoogleUser = {
+        id: crypto.randomUUID(),
+        email: 'google-user@example.com',
+        full_name: 'Google User',
+        provider: 'google',
+        created_at: new Date().toISOString()
+      }
+      
+      // Store the user in localStorage
+      localStorage.setItem('currentUser', JSON.stringify(mockGoogleUser))
+      
+      // Navigate to home
       navigate('/home')
-    } else {
-      setStep(prev => prev + 1)
+    } catch (err: any) {
+      console.error('Error during Google login:', err)
+      setError(err.message || "Google login failed")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -95,12 +194,19 @@ export default function WiperSignup() {
 
       {/* Heading */}
       <h1 className="text-2xl font-bold mb-1">
-        {step === 1 && "Lets Set Up Your Profile"}
+        {step === 1 && "Let's Set Up Your Profile"}
         {step === 2 && "Contact Information"}
         {step === 3 && "Complete Your Profile"}
         {step === 4 && "Your Apartment Details"}
       </h1>
-      <p className="text-sm mb-6">Your car deserve a wipe everyday!</p>
+      <p className="text-sm mb-6">Your car deserves a wipe everyday!</p>
+
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
+          {error}
+        </div>
+      )}
 
       {/* Form Steps */}
       {step === 1 && (
@@ -298,7 +404,11 @@ export default function WiperSignup() {
 
           {/* Social login options */}
           <div className="flex justify-center gap-4 mb-8">
-            <button className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors">
+            <button 
+              className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+            >
                 <img src="./google.png" alt="Google" className="w-10 h-10 object-contain" />
             </button>
             <button className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors">
@@ -308,14 +418,24 @@ export default function WiperSignup() {
         </>
       )}
 
-
       {/* Next button - modify the onClick handler */}
       <button 
-        onClick={handleNextStep}
-        className="bg-black text-[#c5ff00] font-medium py-4 rounded-full mt-auto"
-      >
-        {step === 4 ? "Welcome Aboard!" : "Next"}
-      </button>
+  onClick={handleNextStep}
+  disabled={loading}
+  className={`bg-black text-[#c5ff00] font-medium py-4 rounded-full mt-auto flex items-center justify-center ${loading ? 'opacity-90' : ''}`}
+>
+  {loading ? (
+    <div className="flex items-center justify-center">
+      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-[#c5ff00]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Setting up your account...
+    </div>
+  ) : (
+    step === 4 ? "Welcome Aboard!" : "Next"
+  )}
+</button>
     </div>
   )
 }

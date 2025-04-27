@@ -6,12 +6,14 @@ import {
   carCleanedDays,
   updates,
 } from "./data/mockData";
-import { Car, Calendar } from "lucide-react";
+import { Car, Calendar, X } from "lucide-react";
 import { UpdateType } from "./types";
 import BottomNavigation from "../components/BottomNavigation";
 import PageHeader from "../components/PageHeader";
+import { useNavigate } from "react-router-dom";
 
 function MainPage() {
+  const navigate = useNavigate();
   const [groupedUpdates, setGroupedUpdates] = useState<
     Record<string, UpdateType[]>
   >({});
@@ -19,6 +21,8 @@ function MainPage() {
   const [activeTab, setActiveTab] = useState<"home" | "plans" | "reports">(
     "home"
   );
+  const [isCarModalOpen, setIsCarModalOpen] = useState<boolean>(false);
+  const [registrationInput, setRegistrationInput] = useState<string>("");
 
   // Group updates by date
   useEffect(() => {
@@ -48,6 +52,17 @@ function MainPage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const handleCarInfoClick = () => {
+    setIsCarModalOpen(true);
+    setRegistrationInput(carInfo.registrationNumber);
+  };
+
+  const handleSubmitRegistration = () => {
+    // Here you would handle updating the registration number
+    // For now, we'll just close the modal
+    setIsCarModalOpen(false);
+  };
 
   return (
     <div
@@ -150,16 +165,17 @@ function MainPage() {
             </div>
           </div>
 
-          {/* Car Info */}
+          {/* Car Info - with onClick handler added */}
           <div
-            className="mb-6 flex overflow-hidden"
+            className="mb-6 flex overflow-hidden cursor-pointer"
             style={{
               width: "383px",
               height: "130px",
               borderRadius: "12px",
-              background: "rgba(206, 210, 198, 0.08)", // #CED2C614 converted to rgba
-              maxWidth: "100%", // For responsiveness
+              background: "rgba(206, 210, 198, 0.08)",
+              maxWidth: "100%",
             }}
+            onClick={handleCarInfoClick}
           >
             <div className="w-1/3">
               <img
@@ -192,13 +208,18 @@ function MainPage() {
                 minHeight: "60px", // Increased for better touch targets
                 borderRadius: "12px", // Increased for modern look
                 background: "#F9FFE5",
-                padding: "1rem",  // Increased padding for better spacing
+                padding: "1rem", // Increased padding for better spacing
               }}
             >
-              <span className="mr-3 flex-shrink-0"> {/* Increased margin and prevented shrinking */}
-                <Car className="w-6 h-6 text-[#2A3A0F]" /> {/* Increased icon size */}
+              <span className="mr-3 flex-shrink-0">
+                {" "}
+                {/* Increased margin and prevented shrinking */}
+                <Car className="w-6 h-6 text-[#2A3A0F]" />{" "}
+                {/* Increased icon size */}
               </span>
-              <p className="text-base text-[#2A3A0F] flex-1"> {/* Increased text size and added flex-1 */}
+              <p className="text-base text-[#2A3A0F] flex-1">
+                {" "}
+                {/* Increased text size and added flex-1 */}
                 Your car has been cleaned for {carCleanedDays}
               </p>
             </div>
@@ -248,26 +269,29 @@ function MainPage() {
             ))}
           </div>
           <div className="w-full px-4">
-  <button
-    className="w-full h-[48px] md:w-[380px] md:h-[64px] bg-black rounded-[100px] flex items-center justify-center gap-2 py-3 mx-auto"
-    style={{
-      background: "#000000",
-      maxWidth: "100%", // This ensures button is responsive on smaller screens
-    }}
-  >
-    <span
-      className="font-medium text-sm md:text-base text-center"
-      style={{
-        fontFamily: "var(--label-large-font)",
-        color: "#D3FF33",
-        letterSpacing: "var(--label-large-tracking)",
-        lineHeight: "var(--label-large-line-height)",
-      }}
-    >
-      View Reports
-    </span>
-  </button>
-</div>
+            <button
+              className="w-full h-[48px] md:w-[380px] md:h-[64px] bg-black rounded-[100px] flex items-center justify-center gap-2 py-3 mx-auto"
+              style={{
+                background: "#000000",
+                maxWidth: "100%",
+              }}
+              onClick={() => {
+                navigate("/reports");
+              }}
+            >
+              <span
+                className="font-medium text-sm md:text-base text-center"
+                style={{
+                  fontFamily: "var(--label-large-font)",
+                  color: "#D3FF33",
+                  letterSpacing: "var(--label-large-tracking)",
+                  lineHeight: "var(--label-large-line-height)",
+                }}
+              >
+                View Reports
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Bottom Navigation Component */}
@@ -294,6 +318,110 @@ function MainPage() {
           />
         </div>
       </div>
+
+      {/* Car Details Modal */}
+      {isCarModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div
+            className="bg-white rounded-lg p-6 w-[90%] max-w-md"
+            style={{ maxWidth: screenWidth > 768 ? "380px" : "90%" }}
+          >
+            <h2 className="text-xl font-semibold mb-4">Your Car Details</h2>
+
+            <div className="space-y-4 mb-6">
+              {/* Car Number */}
+              <div className="flex items-center gap-3 border p-3 rounded-md">
+                <Car className="w-6 h-6 text-gray-700" />
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">Registration Number</p>
+                  <input
+                    type="text"
+                    value={registrationInput}
+                    onChange={(e) => setRegistrationInput(e.target.value)}
+                    className="w-full border-0 p-0 focus:outline-none text-base"
+                    placeholder="Enter registration number"
+                  />
+                </div>
+                {registrationInput && (
+                  <button
+                    className="transform"
+                    onClick={() => setRegistrationInput("")}
+                  >
+                    <X className="w-4 h-4 text-gray-400" />
+                  </button>
+                )}
+              </div>
+
+              {/* Brand */}
+              <div className="flex items-center gap-3 border p-3 rounded-md">
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <span className="text-sm font-semibold">B</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">Brand</p>
+                  <input
+                    type="text"
+                    value={carInfo.brand || ""}
+                    className="w-full border-0 p-0 focus:outline-none text-base"
+                    placeholder="Enter brand"
+                  />
+                </div>
+              </div>
+
+              {/* Make */}
+              <div className="flex items-center gap-3 border p-3 rounded-md">
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <span className="text-sm font-semibold">M</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">Make</p>
+                  <input
+                    type="text"
+                    value={carInfo.make || ""}
+                    className="w-full border-0 p-0 focus:outline-none text-base"
+                    placeholder="Enter make"
+                  />
+                </div>
+              </div>
+
+              {/* Class - Dropdown */}
+              <div className="flex items-center gap-3 border p-3 rounded-md">
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <span className="text-sm font-semibold">C</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">Class</p>
+                  <select
+                    className="w-full border-0 p-0 focus:outline-none text-base bg-transparent"
+                    defaultValue={carInfo.class || ""}
+                  >
+                    <option value="">Select class</option>
+                    <option value="sedan">Sedan</option>
+                    <option value="suv">SUV</option>
+                    <option value="hatchback">Hatchback</option>
+                    <option value="coupe">Premium</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setIsCarModalOpen(false)}
+                className="px-4 py-2 text-gray-700"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleSubmitRegistration}
+                className="px-4 py-2 bg-black text-[#D3FF33] rounded-md"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
