@@ -27,6 +27,14 @@ const PageHeader: React.FC<PageHeaderProps> = ({ userName = 'A' }) => {
     navigate('/profile');
     setShowDropdown(false);
   };
+  
+  const handleLogout = () => {
+    // Clear user session from localStorage
+    localStorage.removeItem('currentUser');
+    
+    // Navigate to root route
+    navigate('/');
+  };
 
   return (
     <header className="flex justify-between items-center p-4 w-full sticky top-0 bg-white z-10">
@@ -51,7 +59,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({ userName = 'A' }) => {
               Settings
             </div>
             <div className="border-t border-gray-200"></div>
-            <div className="py-2 px-4 text-sm text-red-500 hover:bg-gray-100 cursor-pointer">
+            <div 
+              className="py-2 px-4 text-sm text-red-500 hover:bg-gray-100 cursor-pointer"
+              onClick={handleLogout}
+            >
               Logout
             </div>
           </div>

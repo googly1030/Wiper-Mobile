@@ -234,6 +234,17 @@ export default function WiperSignup() {
               className="w-full p-3 border border-gray-300 rounded-md"
             />
           </div>
+          <div className="flex justify-center mt-2">
+      <p className="text-sm text-gray-600">
+        Already have an account?{" "}
+        <span 
+          className="text-[#3A4B06] font-medium cursor-pointer hover:underline"
+          onClick={() => navigate('/login')}
+        >
+          Login
+        </span>
+      </p>
+    </div>
         </div>
       )}
 
@@ -406,7 +417,6 @@ export default function WiperSignup() {
           <div className="flex justify-center gap-4 mb-8">
             <button 
               className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors"
-              onClick={handleGoogleLogin}
               disabled={loading}
             >
                 <img src="./google.png" alt="Google" className="w-10 h-10 object-contain" />

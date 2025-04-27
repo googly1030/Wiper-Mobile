@@ -136,7 +136,6 @@ export default function LoginPage() {
 
       <div className="flex justify-center gap-4 mb-8">
         <button 
-          onClick={handleGoogleLogin}
           disabled={loading}
           className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm hover:bg-gray-200 transition-colors"
         >

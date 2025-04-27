@@ -23,14 +23,17 @@ function MainPage() {
   );
   const [isCarModalOpen, setIsCarModalOpen] = useState<boolean>(false);
   const [registrationInput, setRegistrationInput] = useState<string>("");
+  const [carFormData, setCarFormData] = useState({
+    brand: "",
+    make: "",
+    class: ""
+  });
 
   // Group updates by date
   useEffect(() => {
     const grouped: Record<string, UpdateType[]> = {};
 
-    // Create actual date-based grouping
     updates.forEach((update, index) => {
-      // For demo purposes using Today/Yesterday, but in real app use the actual date
       const dateGroup = index < 2 ? "Today" : "Yesterday";
 
       if (!grouped[dateGroup]) {
@@ -56,10 +59,21 @@ function MainPage() {
   const handleCarInfoClick = () => {
     setIsCarModalOpen(true);
     setRegistrationInput(carInfo.registrationNumber);
+    // Initialize form data with existing car info
+    setCarFormData({
+      brand: carInfo.brand || "",
+      make: carInfo.make || "",
+      class: carInfo.class || ""
+    });
+  };
+
+  const handleCarInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setCarFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmitRegistration = () => {
-    // Here you would handle updating the registration number
+    // Here you would handle updating all car info
     // For now, we'll just close the modal
     setIsCarModalOpen(false);
   };
@@ -361,7 +375,9 @@ function MainPage() {
                   <p className="text-xs text-gray-500">Brand</p>
                   <input
                     type="text"
-                    value={carInfo.brand || ""}
+                    name="brand"
+                    value={carFormData.brand}
+                    onChange={handleCarInputChange}
                     className="w-full border-0 p-0 focus:outline-none text-base"
                     placeholder="Enter brand"
                   />
@@ -377,7 +393,9 @@ function MainPage() {
                   <p className="text-xs text-gray-500">Make</p>
                   <input
                     type="text"
-                    value={carInfo.make || ""}
+                    name="make"
+                    value={carFormData.make}
+                    onChange={handleCarInputChange}
                     className="w-full border-0 p-0 focus:outline-none text-base"
                     placeholder="Enter make"
                   />
@@ -392,8 +410,10 @@ function MainPage() {
                 <div className="flex-1">
                   <p className="text-xs text-gray-500">Class</p>
                   <select
+                    name="class"
+                    value={carFormData.class}
+                    onChange={handleCarInputChange}
                     className="w-full border-0 p-0 focus:outline-none text-base bg-transparent"
-                    defaultValue={carInfo.class || ""}
                   >
                     <option value="">Select class</option>
                     <option value="sedan">Sedan</option>
