@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
-import { CheckCircle, CheckIcon } from "lucide-react";
+import { CheckCircle, CheckIcon, Car, X } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import BottomNavigation from "../components/BottomNavigation";
 import { supabase } from "../lib/supabase";
@@ -70,6 +70,17 @@ export const Plans = (): JSX.Element => {
   const [purchasedPlanId, setPurchasedPlanId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  // Add car modal state
+  const [isCarModalOpen, setIsCarModalOpen] = useState<boolean>(false);
+  const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
+  const [carFormData, setCarFormData] = useState({
+    registrationNumber: "",
+    brand: "",
+    make: "",
+    class: ""
+  });
+  const [userHasCarInfo, setUserHasCarInfo] = useState<boolean>(false);
 
   // Get current user data on component mount
   useEffect(() => {
@@ -90,7 +101,7 @@ export const Plans = (): JSX.Element => {
     getUserFromSupabase();
   }, []);
 
-  // Check if user has any active plans
+  // Check if user has any active plans and car info
   useEffect(() => {
     if (currentUser?.id) {
       const checkActivePlan = async () => {
@@ -110,8 +121,28 @@ export const Plans = (): JSX.Element => {
           }
         }
       };
+
+      const checkUserCarInfo = async () => {
+        const { data: carData, error } = await supabase
+          .from('user_vehicles')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .limit(1);
+          
+        if (!error && carData && carData.length > 0) {
+          setUserHasCarInfo(true);
+          // Pre-fill car info if available
+          setCarFormData({
+            registrationNumber: carData[0].registration_number || "",
+            brand: carData[0].brand || "",
+            make: carData[0].make || "",
+            class: carData[0].car_class || ""
+          });
+        }
+      };
       
       checkActivePlan();
+      checkUserCarInfo();
     }
   }, [currentUser]);
 
@@ -125,12 +156,67 @@ export const Plans = (): JSX.Element => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handlePurchase = async (plan: typeof plans[0]) => {
+  const handleCarInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setCarFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePlanSelection = (plan: typeof plans[0]) => {
     if (!currentUser?.id) {
       toast.error("Please login to purchase a plan");
       return;
     }
-    
+
+    // If user already has car info, proceed with purchase
+    // Otherwise show car info modal
+    if (userHasCarInfo) {
+      handlePurchase(plan);
+    } else {
+      setSelectedPlan(plan);
+      setIsCarModalOpen(true);
+    }
+  };
+
+  const handleSubmitCarInfo = async () => {
+    // Validate car info
+    if (!carFormData.registrationNumber || !carFormData.brand || !carFormData.make || !carFormData.class) {
+      toast.error("Please fill all car details");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Save car info to database
+      const { error: carError } = await supabase
+        .from('user_vehicles')
+        .insert({
+          user_id: currentUser.id,
+          registration_number: carFormData.registrationNumber,
+          brand: carFormData.brand,
+          make: carFormData.make,
+          car_class: carFormData.class,
+          created_at: new Date().toISOString()
+        });
+      
+      if (carError) throw carError;
+      
+      // Now that we have car info, proceed with the plan purchase
+      if (selectedPlan) {
+        await handlePurchase(selectedPlan);
+      }
+      
+      setUserHasCarInfo(true);
+      setIsCarModalOpen(false);
+    } catch (err) {
+      console.error('Error saving car info:', err);
+      toast.error('Failed to save car information. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePurchase = async (plan: typeof plans[0]) => {
     setLoading(true);
     try {
       // Calculate expiry date (30 days from now)
@@ -156,7 +242,7 @@ export const Plans = (): JSX.Element => {
       setPurchasedPlanId(plan.id);
       toast.success(`Successfully purchased ${plan.type} plan!`);
       
-      // You could also update the user's plan info in localStorage if needed
+      // Update user's plan info in localStorage
       const userObj = JSON.parse(localStorage.getItem('currentUser') || '{}');
       userObj.current_plan = plan.type;
       userObj.plan_expiry = expiryDate.toISOString();
@@ -227,7 +313,7 @@ export const Plans = (): JSX.Element => {
                           ? 'bg-green-500 hover:bg-green-600' 
                           : 'bg-[#9cc700] hover:bg-[#8cb600]'
                       } text-[#263000] font-medium rounded-full shadow-md transition-all duration-200`}
-                      onClick={() => handlePurchase(plan)}
+                      onClick={() => handlePlanSelection(plan)}
                       disabled={loading || purchasedPlanId === plan.id}
                     >
                       {loading 
@@ -259,6 +345,125 @@ export const Plans = (): JSX.Element => {
           screenWidth={screenWidth}
         />
       </section>
+
+      {/* Car Details Modal */}
+      {isCarModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div
+            className="bg-white rounded-lg p-6 w-[90%] max-w-md"
+            style={{ maxWidth: screenWidth > 768 ? "380px" : "90%" }}
+          >
+            <h2 className="text-xl font-semibold mb-4">Add Car Details</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              To continue with your plan purchase, please provide your car details.
+            </p>
+
+            <div className="space-y-4 mb-6">
+              {/* Car Number */}
+              <div className="flex items-center gap-3 border p-3 rounded-md">
+                <Car className="w-6 h-6 text-gray-700" />
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">Registration Number*</p>
+                  <input
+                    type="text"
+                    name="registrationNumber"
+                    value={carFormData.registrationNumber}
+                    onChange={handleCarInputChange}
+                    className="w-full border-0 p-0 focus:outline-none text-base"
+                    placeholder="Enter registration number"
+                    required
+                  />
+                </div>
+                {carFormData.registrationNumber && (
+                  <button
+                    className="transform"
+                    onClick={() => setCarFormData(prev => ({ ...prev, registrationNumber: "" }))}
+                  >
+                    <X className="w-4 h-4 text-gray-400" />
+                  </button>
+                )}
+              </div>
+
+              {/* Brand */}
+              <div className="flex items-center gap-3 border p-3 rounded-md">
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <span className="text-sm font-semibold">B</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">Brand*</p>
+                  <input
+                    type="text"
+                    name="brand"
+                    value={carFormData.brand}
+                    onChange={handleCarInputChange}
+                    className="w-full border-0 p-0 focus:outline-none text-base"
+                    placeholder="Enter brand"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Make */}
+              <div className="flex items-center gap-3 border p-3 rounded-md">
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <span className="text-sm font-semibold">M</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">Make*</p>
+                  <input
+                    type="text"
+                    name="make"
+                    value={carFormData.make}
+                    onChange={handleCarInputChange}
+                    className="w-full border-0 p-0 focus:outline-none text-base"
+                    placeholder="Enter make"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Class - Dropdown */}
+              <div className="flex items-center gap-3 border p-3 rounded-md">
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <span className="text-sm font-semibold">C</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">Class*</p>
+                  <select
+                    name="class"
+                    value={carFormData.class}
+                    onChange={handleCarInputChange}
+                    className="w-full border-0 p-0 focus:outline-none text-base bg-transparent"
+                    required
+                  >
+                    <option value="">Select class</option>
+                    <option value="sedan">Sedan</option>
+                    <option value="suv">SUV</option>
+                    <option value="hatchback">Hatchback</option>
+                    <option value="premium">Premium</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setIsCarModalOpen(false)}
+                className="px-4 py-2 text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitCarInfo}
+                disabled={loading}
+                className="px-4 py-2 bg-black text-[#D3FF33] rounded-md"
+              >
+                {loading ? "Submitting..." : "Continue with Plan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
